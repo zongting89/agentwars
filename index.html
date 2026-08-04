@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Agent Wars — Team / Organisational Implementation Tracker</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #f7f7f5;
+    color: #1f1f1f;
+    padding: 32px 40px;
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px 0; }
+  .subtitle { color: #6b6b6b; font-size: 13px; margin-bottom: 20px; }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #e5e5e2;
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
+    text-align: left;
+  }
+  .card:hover { box-shadow: 0 2px 10px rgba(0,0,0,.06); transform: translateY(-1px); }
+  .card.active { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,.15); }
+  .card .num { font-size: 30px; font-weight: 700; line-height: 1.1; }
+  .card .label { font-size: 12.5px; color: #6b6b6b; margin-top: 4px; }
+  .card.total .num { color: #1f1f1f; }
+  .card.completed .num { color: #178a4c; }
+  .card.inprogress .num { color: #b06a00; }
+  .card.notapplicable .num { color: #6b7280; }
+  .card-note { font-size: 11.5px; color: #9aa1ac; font-style: italic; margin: 0 0 18px 2px; }
+
+  .filters {
+    background: #fff;
+    border: 1px solid #e5e5e2;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+  }
+  .filters .row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .filters .row-label { font-size: 12.5px; color: #6b6b6b; margin-right: 4px; min-width: 110px; }
+  .pill {
+    border: 1px solid #dcdcd8;
+    background: #fafafa;
+    border-radius: 999px;
+    padding: 6px 13px;
+    font-size: 12.5px;
+    cursor: pointer;
+    color: #333;
+    white-space: nowrap;
+  }
+  .pill:hover { background: #f0f0ee; }
+  .pill.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+  .clear-btn {
+    margin-left: auto;
+    font-size: 12px;
+    color: #2563eb;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  .result-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .result-count { font-size: 13px; color: #6b6b6b; }
+
+  table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e5e5e2; border-radius: 12px; overflow: hidden; }
+  thead th {
+    text-align: left;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: #6b6b6b;
+    background: #fafaf8;
+    padding: 10px 12px;
+    border-bottom: 1px solid #e5e5e2;
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 10px 12px;
+    font-size: 13px;
+    border-bottom: 1px solid #f0f0ee;
+    vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #fafaf8; }
+  td.sn { color: #6b6b6b; width: 34px; }
+  td.details, td.remarks { max-width: 280px; }
+  td.title { font-weight: 600; min-width: 150px; }
+  .badge {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge.completed { background: #e6f6ec; color: #178a4c; }
+  .badge.inprogress { background: #fdf0dd; color: #b06a00; }
+  .badge.notapplicable { background: #eceef2; color: #6b7280; }
+  .combined-tag {
+    display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 700;
+    color: #178a4c; background: #e6f6ec; padding: 2px 6px; border-radius: 999px;
+  }
+  .empty-state { padding: 40px; text-align: center; color: #999; font-size: 13px; }
+  footer { margin-top: 24px; text-align: center; color: #bbb; font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>AGENT WARS — Team / Organisational Implementation</h1>
+<div class="subtitle">Lithan Academy · 33 agent projects · Rollout status across teams and the organisation</div>
+
+<div class="cards" id="cards"></div>
+<div class="card-note" id="cardNote"></div>
+
+<div class="filters">
+  <div class="row">
+    <span class="row-label">Filter by category</span>
+    <div id="categoryPills" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+    <button class="clear-btn" id="clearBtn">Clear all filters</button>
+  </div>
+</div>
+
+<div class="result-bar">
+  <div class="result-count" id="resultCount"></div>
+</div>
+
+<div id="tableWrap"></div>
+
+<footer>Agent Wars · Lithan Academy</footer>
+</div>
+<script>
+// ---- Data: 33 agent projects. This dashboard shows Team / Organisational implementation
+// status only. (Internally, projects are also tracked through an individual "Self" build
+// stage before this and a longer-term "ClaaS2SaaS Product" integration stage after this —
+// those aren't shown here to keep the view focused for stakeholders.)
+//
+// 2 confirmed combined projects:
+//   1) SN1 (Chandrashekhar Kumbhar) + SN12 (Jehan) — Assessment Control Agent merged into Auto Scheduler for OA
+//   2) SN32 — 8-person Auto-grader project (SE team), folding in SN2, SN5, SN6, SN8, SN16, SN19, SN20, SN23
+const DATA = [
+{sn:1,cat:"Administrative/Operations",staff:"Chandrashekhar Kumbhar",team:"",title:"Assessment Control Agent for Lithan",details:"A menu-driven bot that manages faculty confirmations, learner bookings, reminders, and status checks with auto-saved data in tables.",combined:true,
+  impl:{status:"notapplicable",date:"",remarks:"Combined with SN 12 (Jehan — Auto Scheduler for OA)."}},
+{sn:2,cat:"Administrative/Operations",staff:"Wutt Yi Htoo",team:"",title:"AI Auto Grading Agent",details:"The agent loads all documents, extracts rubric criteria, checks submission relevance, retrieves evidence from the student work, and uses AI to generate grades, feedback, and final scores.",combined:true,
+  impl:{status:"notapplicable",date:"",remarks:"Combined with the Auto-grader project (SN32)."}},
+{sn:3,cat:"Administrative/Operations",staff:"Muhammad Akmal Dodgson",team:"",title:"Bulk Communicator",details:"It is not an agent, it is a Power Automate process. It is triggered manually where it will refer to a filled Sharepoint Lists and sends out communication from the provided information.",
+  impl:{status:"inprogress",date:"11-Aug-26",remarks:"Database migration for scalability. To complete full implementation with Nina (SM) and Hema (DB)."}},
+{sn:4,cat:"Administrative/Operations",staff:"Nina Dela Cruz",team:"",title:"Executive Assistant Agent",details:"The Executive Assistant Agent is a personalized AI assistant designed to support administrative, operational, and productivity-related work. It combines the functions of an executive assistant, workflow designer, and skill-building partner using Claude.",
+  impl:{status:"notapplicable",date:"",remarks:"Assisting Sridevi on the AI Learner Payment Reminder Agent (SN21) instead of a separate team rollout of her own agent."}},
+{sn:5,cat:"Admissions",staff:"Madhuja Pabasara",team:"",title:"Learner Submission Feedback Agent",details:"The agent consists of multiple modules that work together to provide structured, accurate, and efficient feedback. File Loader & Reader handles TXT, PDF, and DOCX inputs and extracts text from reports and presentations.",combined:true,
+  impl:{status:"notapplicable",date:"",remarks:"The only pending item is the Video Transcription and Summarization feature, which requires a higher memory hosting plan. Combined with the Auto-grader project (SN32)."}},
+{sn:6,cat:"Admissions",staff:"Muhammad Nasrullah Khairi",team:"",title:"CheckOnIt",details:"Agent gathers all data on a learner, analyzes it, and provides insight into the learner's status on anything.",
+  impl:{status:"notapplicable",date:"",remarks:"Working on the Auto-grader project (SN32)."}},
+{sn:7,cat:"Admissions",staff:"Hemalatha Sridhar",team:"",title:"LMS Co-ordinator",details:"My agent helped to reduce the repetitive steps while doing LMS rerun.",
+  impl:{status:"inprogress",date:"21-Aug-26",remarks:"Need to get LMS API to connect to the flow."}},
+{sn:8,cat:"Communication & Reminders",staff:"Arvinder Kaur",team:"",title:"AI Autograder",details:"AI-Autograder is an intelligent grading agent that automatically evaluates student submissions using assignment instructions, rubrics, and predefined prompts. The system accepts multiple file formats such as PDF, DOCX, and ZIP files containing source code.",combined:true,
+  impl:{status:"notapplicable",date:"",remarks:"Combined with the Auto-grader project (SN32)."}},
+{sn:9,cat:"Communication & Reminders",staff:"Ma Victoria A Capisonda",team:"Admissions",title:"EnrollHub Connect",details:"The Agent Dashboard posts in MS Teams the list of students joining a specific class/intake, including name, email, consultant name, enrollment status, and sponsored company (if applicable). Includes an e-form for Sales to request student reallocation as part of pre-SOC movements.",
+  impl:{status:"completed",date:"31-Jul-26",remarks:"Agent is already being used by the Admissions team. To-do: add an e-form for Sales team to request student reallocation between intakes."}},
+{sn:10,cat:"Communication & Reminders",staff:"Joanna Ng Wai Li Ng",team:"",title:"TrackMate",details:"TrackMate is an automated reminder system that prompts learners to provide and commit to their submission date within the stipulated module timeframe.",
+  impl:{status:"notapplicable",date:"",remarks:""}},
+{sn:11,cat:"Communication & Reminders",staff:"Ariel Marie Gaffud",team:"LS",title:"Virtual Dashboard Agent",details:"My Virtual Agent is an automated assistant integrated with Microsoft Teams, Microsoft Power BI, and the LMS to help monitor and manage training operations — checking cohort codes, Teams session links, and more.",
+  impl:{status:"notapplicable",date:"",remarks:""}},
+{sn:12,cat:"Grading & Assessment",staff:"Jehan / Chandrashekhar Kumbhar",team:"",title:"Auto Scheduler for OA",details:"Update from OA vendor side: OA vendor (Nirav) would provide an API key for the online assessment portal so we can connect it to OA to schedule assessments automatically. Vendor is almost done with this requirement and will provide a cost estimate.",combined:true,
+  impl:{status:"inprogress",date:"11-Aug-26",remarks:"API available from vendor. Developing auto-population of assessment date/time in OA without an external agent — in dev stage, prototype created."}},
+{sn:13,cat:"Grading & Assessment",staff:"Jeff Shi Yangjie",team:"",title:"Enterprise Learner Dashboard",details:"The Enterprise Learner Dashboard lets programme managers track cohort learner progress, auto-flag assessment eligibility based on prerequisite logic, and manage learner statuses from a single screen.",
+  impl:{status:"inprogress",date:"31-Aug-26",remarks:"Reviewed with Salil and tech team — to be implemented together with Tech team's Manager Mentor app; completion date TBD with Tech team."}},
+{sn:14,cat:"Grading & Assessment",staff:"Anarizdel-Chary Matias Vitan",team:"LS",title:"SessionSync AI",details:"SessionSync AI automatically identifies applicable sessions, generates standardized session names, and creates Teams meetings to reduce manual work and improve scheduling accuracy.",
+  impl:{status:"notapplicable",date:"",remarks:""}},
+{sn:15,cat:"Grading & Assessment",staff:"Tamilarasi P",team:"LS",title:"Class Shell bulk allocation",details:"The process will help identify and allocate the learners in the right class; it is not an agent but is trying to create an API.",
+  impl:{status:"inprogress",date:"12-Aug-26",remarks:"SMS confirmed ready by 7 Aug 2026; UAT scheduled 10–11 Aug 2026. Will only be used by the LS team."}},
+{sn:16,cat:"Grading & Assessment",staff:"Saroja Krishnamurthy",team:"",title:"EduMentor AI Academic Assistant",details:"EduMentor AI is an Agentic AI-powered academic mentoring assistant automating student support and academic workflow operations — conversational AI, RAG, document retrieval, email drafting, Outlook calendar automation, and Voice AI in one platform. Also includes an AI-Powered Rubric-Based Assessment and Feedback System.",combined:true,
+  impl:{status:"notapplicable",date:"",remarks:"Combined with the Auto-grader project (SN32)."}},
+{sn:17,cat:"Grading & Assessment",staff:"Anitha Sankar",team:"LS",title:"Assessment Upload Monitoring System",details:"Real-time detection of upload failures with automated email alerts, detailed error reports, 24/7 monitoring. Minimal manual intervention needed.",
+  impl:{status:"completed",date:"4-Jun-26",remarks:"Used in LS team."}},
+{sn:18,cat:"Mentoring & Support",staff:"Madhavi Mhatre",team:"LS",title:"Resumption and Addendum Monitoring System",details:"Additionally working on an AI-Powered Rubric-Based Assessment and Feedback System.",
+  impl:{status:"completed",date:"4-Jun-26",remarks:"Used in LS team."}},
+{sn:19,cat:"Mentoring & Support",staff:"Khin Ma Ma Cho",team:"",title:"Faculty Grading Assistant",details:"AI-powered grading assistant that evaluates learner submissions against rubric criteria using a hybrid Rule-Based + OpenAI GPT approach, generating grades, feedback, and recommendations.",combined:true,
+  impl:{status:"notapplicable",date:"",remarks:"Combined with the Auto-grader project (SN32)."}},
+{sn:20,cat:"Monitoring & Tracking",staff:"Myo Kyaw Oo",team:"",title:"Ache AI",details:"Assignment Checker.",combined:true,
+  impl:{status:"notapplicable",date:"",remarks:"Combined with the Auto-grader project (SN32)."}},
+{sn:21,cat:"Monitoring & Tracking",staff:"R Sridevi",team:"",title:"AI Learner Payment Reminder Agent",details:"To send reminders to international learners on their instalment payments.",
+  impl:{status:"inprogress",date:"14-Aug-26",remarks:"Working with Nina on the Power Automate flow for International learners' payment reminders."}},
+{sn:22,cat:"Monitoring & Tracking",staff:"Sarvan Kumar",team:"",title:"Marconi Masters Grade Generator Assistant (MGGA)",details:"Agent assists with generating: Grades (UK), Italian Grades /30, Final Thesis /6, Final Italian Grade /110.",
+  impl:{status:"completed",date:"31-Jul-26",remarks:"As of 31 Jul, tested and working with SM (ACIS, PDCA) & DS SE (PDDS, PDWD) learners; demonstrated with Jehan for DB (MTDM) learners. Considered full-fledged for its problem statement."}},
+{sn:23,cat:"Monitoring & Tracking",staff:"Ei Thandar Khaing",team:"",title:"LIA Agentic AI",details:"AI-powered operational and instructional intelligence assistant for Learning & Delivery teams — meeting transcript analysis, management reporting, stakeholder email generation, curriculum/IU analysis.",combined:true,
+  impl:{status:"notapplicable",date:"",remarks:"Combined with the Auto-grader project (SN32)."}},
+{sn:24,cat:"Coaching Agent",staff:"Benjamin Liu",team:"",title:"Email Sentiment & Draft Assistant",details:"AI-powered Customer Role Play Bot in Copilot Studio that lets learners practice LMS-based customer service scenarios and get immediate, actionable feedback.",
+  impl:{status:"inprogress",date:"14-Aug-26",remarks:"In testing phase; will be implemented for the next running cohort."}},
+{sn:25,cat:"Monitoring & Tracking",staff:"Goh Yee Jing",team:"LM",title:"Submission Watcher",details:"Browser-based intelligence agent identifying learners with missing MCQs and assignments/projects from LMS CSV files — multiple file uploads, grouping by class, searchable/filterable views.",
+  impl:{status:"notapplicable",date:"",remarks:"Decided not to continue due to current LMS data limitations — available LMS data only provides grading reports, which depend on faculty marking completion and don't reflect real-time submission status."}},
+{sn:26,cat:"Other",staff:"Koh Fuqi",team:"LS",title:"SMS queue manager",details:"Manages SMS submission queue to handle concurrent requests, auto-proceeding when no anomalies (duplicate learners, missing invoices) are detected, and notifying users upon completion.",
+  impl:{status:"inprogress",date:"14-Aug-26",remarks:"Folding the processes into Welcome Agent v2.0."}},
+{sn:27,cat:"Scheduling & Booking",staff:"Nur Ayuni Binte Rahmat",team:"LS",title:"Assistant Agent",details:"An AI-powered daily operations assistant that streamlines routine administrative tasks and workflows.",
+  impl:{status:"notapplicable",date:"",remarks:"Decided not to proceed due to PDPA concerns around exposing learners' personal data to a third-party platform."}},
+{sn:28,cat:"Scheduling & Booking",staff:"Anusha",team:"",title:"Mentor Sync",details:"MentorSync is a dual-access AI platform: assignment feedback with estimated grades, Teams-integrated deadline reminders, portfolio-building guidance, placement eligibility scoring, and mentor usage/performance tracking.",
+  impl:{status:"inprogress",date:"10-Aug-26",remarks:"Working toward a live version of Portfolio Support & Auto-Feedback for Assignments."}},
+{sn:29,cat:"Admissions",staff:"Claudie Sarmiento",team:"Admissions",title:"Enterprise Enrolment Agent",details:"The agent automates and transforms company-sponsored enrolment data submitted through Microsoft Forms — Power Automate validates fields, reformats data, and generates records in SharePoint.",
+  impl:{status:"completed",date:"5-Jun-26",remarks:"Agent is already being used by the Admissions team."}},
+{sn:30,cat:"Administrative/Operations",staff:"Priya",team:"LM",title:"Ping Me Agent",details:"Notification for learners & faculties for submissions, gradings and follow up.",
+  impl:{status:"inprogress",date:"17-Aug-26",remarks:"Connecting with Omar on the LMS API; his script needs more detail (due dates, ongoing-class data) — he's checking the database and rewriting it."}},
+{sn:31,cat:"Administrative/Operations",staff:"Nilofar",team:"LM",title:"AIM - Attendance Intervention Monitor",details:"Proactively detects attendance discrepancies, classifies exceptions, and initiates timely interventions by notifying the appropriate teams (LM, LS, and IT).",
+  impl:{status:"inprogress",date:"16-Aug-26",remarks:"31 Jul 2026: solution design. 3–5 Aug 2026: initial development with low-code, exception monitoring logic and workflow automation underway."}},
+{sn:32,cat:"Grading & Assessment",staff:"Wutt Yi Htoo / Madhuja Pabasara / Muhammad Nasrullah Khairi / Saroja Krishnamurthy / Arvinder Kaur / Khin Ma Ma Cho / Myo Kyaw Oo / Ei Thandar Khaing",team:"SE",title:"Auto-grader project",details:"Autograder project with RAG and AI implementation to grade learner submissions with the proficiency level.",combined:true,
+  impl:{status:"inprogress",date:"7-Aug-26",remarks:"Pro-code development in progress. Workflow confirmed; technical details handled by Nas. ClickUp set up with tasks separated and assigned. Remaining work includes RAG, prompt engineering, testing, and other evaluation."}},
+{sn:33,cat:"Monitoring & Tracking",staff:"Alec",team:"SM",title:"Assessment Duration Monitor",details:"Notification to LF & LA if assessment session falls below 30/60 mins.",
+  impl:{status:"inprogress",date:"11-Aug-26",remarks:"Working with Karen since Aug 4, and will be ready on or before 11 Aug."}},
+];
+
+const STATUS_META = {
+  completed:     { label: "Completed",      cls: "completed"     },
+  inprogress:    { label: "In-progress",    cls: "inprogress"    },
+  notapplicable: { label: "Not Applicable", cls: "notapplicable" },
+};
+
+const CATEGORIES = [
+  "Administrative/Operations","Admissions","Communication & Reminders",
+  "Grading & Assessment","Mentoring & Support","Monitoring & Tracking",
+  "Coaching Agent","Other","Scheduling & Booking"
+];
+
+let activeStatus = null;
+let activeCategory = null;
+
+function counts() {
+  const c = { completed:0, inprogress:0, notapplicable:0 };
+  DATA.forEach(r => { c[r.impl.status]++; });
+  return c;
+}
+
+function renderCards() {
+  const c = counts();
+  const cards = [
+    { key: null, cls: "total", num: DATA.length, label: "Total agent projects" },
+    { key: "completed", cls: "completed", num: c.completed, label: "Completed" },
+    { key: "inprogress", cls: "inprogress", num: c.inprogress, label: "In-progress" },
+    { key: "notapplicable", cls: "notapplicable", num: c.notapplicable, label: "Not Applicable" },
+  ];
+  document.getElementById("cards").innerHTML = cards.map(cd => `
+    <div class="card ${cd.cls} ${activeStatus === cd.key ? 'active' : ''}" data-status="${cd.key ?? ''}">
+      <div class="num">${cd.num}</div>
+      <div class="label">${cd.label}</div>
+    </div>
+  `).join("");
+  document.querySelectorAll(".card").forEach(el => {
+    el.addEventListener("click", () => {
+      const s = el.getAttribute("data-status");
+      activeStatus = s === "" ? null : s;
+      render();
+    });
+  });
+  document.getElementById("cardNote").textContent =
+    `"Not Applicable" = individual-use only, redirected to support another agent's rollout, or folded into the combined Auto-grader project.`;
+}
+
+function renderCategoryPills() {
+  const wrap = document.getElementById("categoryPills");
+  wrap.innerHTML = CATEGORIES.map(cat => `
+    <div class="pill ${activeCategory === cat ? 'active' : ''}" data-cat="${cat}">${cat}</div>
+  `).join("");
+  wrap.querySelectorAll(".pill").forEach(el => {
+    el.addEventListener("click", () => {
+      const cat = el.getAttribute("data-cat");
+      activeCategory = (activeCategory === cat) ? null : cat;
+      render();
+    });
+  });
+}
+
+function renderTable() {
+  let rows = DATA.slice();
+  if (activeStatus) rows = rows.filter(r => r.impl.status === activeStatus);
+  if (activeCategory) rows = rows.filter(r => r.cat === activeCategory);
+
+  document.getElementById("resultCount").textContent =
+    `${rows.length} agent${rows.length === 1 ? '' : 's'}` +
+    (activeStatus ? ` · ${STATUS_META[activeStatus].label}` : '') +
+    (activeCategory ? ` · ${activeCategory}` : '');
+
+  if (rows.length === 0) {
+    document.getElementById("tableWrap").innerHTML = `<div class="empty-state">No agents match this filter.</div>`;
+    return;
+  }
+
+  const body = rows.map((r, i) => {
+    const s = r.impl;
+    return `
+    <tr>
+      <td class="sn">${i + 1}</td>
+      <td>${r.cat}</td>
+      <td>${r.staff}${r.team ? ` <span style="color:#999;font-size:11px;">(${r.team})</span>` : ''}</td>
+      <td class="title">${r.title}${r.combined ? '<span class="combined-tag">COMBINED</span>' : ''}</td>
+      <td class="details">${r.details || '<span style="color:#bbb;">—</span>'}</td>
+      <td><span class="badge ${STATUS_META[s.status].cls}">${STATUS_META[s.status].label}</span></td>
+      <td>${s.date || '<span style="color:#bbb;">—</span>'}</td>
+      <td class="remarks">${s.remarks || '<span style="color:#bbb;">—</span>'}</td>
+    </tr>
+  `;
+  }).join("");
+
+  document.getElementById("tableWrap").innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>SN</th><th>Category</th><th>Staff name</th><th>Agent title</th>
+          <th>Details</th><th>Status</th><th>Live Date</th><th>Remarks</th>
+        </tr>
+      </thead>
+      <tbody>${body}</tbody>
+    </table>
+  `;
+}
+
+function render() {
+  renderCards();
+  renderCategoryPills();
+  renderTable();
+}
+
+document.getElementById("clearBtn").addEventListener("click", () => {
+  activeStatus = null;
+  activeCategory = null;
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
